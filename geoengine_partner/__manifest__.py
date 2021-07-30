@@ -8,7 +8,8 @@
  'website': 'https://github.com/OCA/geospatial',
  'depends': [
      'base',
-     'base_geoengine'
+     'base_geoengine',
+     'base_geolocalize'
  ],
  'data': [
      'views/partner.xml'

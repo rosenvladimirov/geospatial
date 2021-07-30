@@ -1,54 +1,27 @@
 # Copyright 2011-2012 Nicolas Bessi (Camptocamp SA)
 # Copyright 2016 Yannick Vaucher (Camptocamp SA)
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
-from odoo import _, api, models, tools
+import logging
+
+from odoo import _, api, models
 from odoo.exceptions import except_orm, MissingError
 from . import geo_operators
 from . import fields as geo_fields
+
+logger = logging.getLogger(__name__)
 
 
 DEFAULT_EXTENT = ('-123164.85222423, 5574694.9538936, '
                   '1578017.6490538, 6186191.1800898')
 
 
-class GeoModel(models.BaseModel):
-    """Base class for all models defining geo fields.
+class GeoModel(models.AbstractModel):
+    """ Extend Base class for to allow definition of geo fields.
     """
+    _inherit = 'base'
 
     # Array of ash that define layer and data to use
     _georepr = []
-    _name = None
-    _auto = True
-    # not visible in ORM registry, meant to be python-inherited only
-    _register = False
-    _transient = False  # True in a TransientModel
-
-    @api.model_cr_context
-    def _auto_init(self):
-        """Initialize the columns in dB and Create the GIST index
-        only create and update supported
-
-        We override the base methid  because creation of fields in DB is not
-        actually delegated to the field it self but to the ORM _auto_init
-        function
-        """
-        cr = self._cr
-
-        geo_fields = {}
-        for f_name, field in self._fields.items():
-            if field.type.startswith('geo_'):
-                geo_fields[f_name] = field
-        res = super(GeoModel, self)._auto_init()
-        column_data = tools.table_columns(cr, self._table)
-
-        for f_name, geo_field in geo_fields.items():
-            if geo_field.compute and not geo_field.store:
-                continue
-            fct = geo_field.create_geo_column
-            if f_name in column_data:
-                fct = geo_field.update_geo_column
-            fct(cr, f_name, self._table, self._name)
-        return res
 
     @api.model
     def fields_get(self, allfields=None, attributes=None):
@@ -65,7 +38,7 @@ class GeoModel(models.BaseModel):
                     if not field.dim:
                         geo_type['dim'] = 2
                     if not field.srid:
-                        geo_type['srid'] = 900913
+                        geo_type['srid'] = 3857
                 res[f_name]['geo_type'] = geo_type
         return res
 
@@ -110,8 +83,6 @@ class GeoModel(models.BaseModel):
                 'default_extent': view.default_extent or DEFAULT_EXTENT,
                 'default_zoom': view.default_zoom,
             }
-            # XXX still the case ?
-            # TODO find why context in read does not work with webclient
             for layer in view.raster_layer_ids:
                 layer_dict = layer.read()[0]
                 res['geoengine_layers']['backgrounds'].append(layer_dict)
@@ -151,15 +122,17 @@ class GeoModel(models.BaseModel):
             raster = raster_obj.search([('view_id', '=', view.id)], limit=1)
         if not raster:
             raise MissingError(_('No raster layer for view %s') % (view.name,))
-        return {
+        res = {
             'edit_raster': raster.read()[0],
             'geo_type': field.geo_type,
             'srid': field.srid,
             'projection': view.projection,
             'restricted_extent': view.restricted_extent,
-            'default_extent': view.default_extent,
+            'default_extent': view.default_extent or DEFAULT_EXTENT,
             'default_zoom': view.default_zoom,
         }
+        logger.debug("Parameters for geo field {}:\n{}".format(column, res))
+        return res
 
     @api.model
     def geo_search(self, domain=None, geo_domain=None, offset=0,

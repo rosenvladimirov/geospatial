@@ -14,14 +14,19 @@ msgstr ""
 "Plural-Forms: \n"
 
 #. module: geoengine_partner
-#: model:ir.model.fields,field_description:geoengine_partner.field_res_partner_geo_point
-#: model:ir.model.fields,field_description:geoengine_partner.field_res_users_geo_point
+#: model:ir.model.fields,field_description:geoengine_partner.field_res_partner__geo_point
+#: model:ir.model.fields,field_description:geoengine_partner.field_res_users__geo_point
 msgid "Address coordinates"
 msgstr ""
 
 #. module: geoengine_partner
 #: model:ir.model,name:geoengine_partner.model_res_partner
 msgid "Contact"
+msgstr ""
+
+#. module: geoengine_partner
+#: model_terms:ir.ui.view,arch_db:geoengine_partner.geo_partner_view_form
+msgid "Geoengine Map"
 msgstr ""
 
 #. module: geoengine_partner
